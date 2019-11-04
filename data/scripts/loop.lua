@@ -10,6 +10,7 @@ Loop = {
       Game.Messages = {}
       Game.Text = {""}
       Game.Here_Doc = false
+      Game.Parse_Complete = false
       Game.Parse = {{["args"] = ""}}
    end,
 
@@ -34,26 +35,94 @@ Loop = {
       local y_dim = y_max - y_min
       local newline = false
 
-      do -- Process the text input and convert it into line input
-         local input_index = #Game.Text
-         local input = Game.Text[input_index]
-
-         for _, msg in ipairs(messages) do
-            if msg.Type == "Text" then
-               if msg.Text ~= nil then
-                  input = input .. msg.Text
-               else
-                  if msg.Control == "Enter" then
-                     Game.Text[input_index + 1] = ""
-                     newline = true
-                  elseif msg.Control == "Backspace" then
-                     input = string.sub(input, 1, string.len(input) - 1)
-                  end
+      for _, msg in ipairs(messages) do -- Process the text input and convert it into line input
+         if msg.Type == "Text" then
+            if msg.Text ~= nil then
+               Game.Line = Game.Line .. msg.Text
+            else
+               if msg.Control == "Enter" then
+                  newline = true
+               elseif msg.Control == "Backspace" then
+                  Game.Line = string.sub(Game.Line, 1, string.len(Game.Line) - 1)
                end
             end
          end
+      end
 
-         Game.Text[input_index] = input
+      if newline == true then
+         if Game.Here_Doc == true then -- Here doc entry
+            local index = 0
+            for i, p in ipairs(Game.Parse) do
+               if p.heredoc_todo then
+                  index = i
+                  break
+               end
+            end
+
+            local str_index = #(Game.Parse[index].heredoc_str)
+            local maybe_marker = Game.Parse[index].heredoc_str[str_index] .. Game.Line
+            if maybe_marker == Game.Parse[index].heredoc_marker and newline then
+               Game.Parse[index].heredoc_todo = false
+               Game.Here_Doc = false -- We make it true again below if need be
+            else
+               Game.Parse[index].heredoc_str[str_index] =  Game.Parse[index].heredoc_str[str_index] .. Game.Line
+               if newline then
+                  Game.Parse[index].heredoc_str[str_index + 1] = ""
+               end
+            end
+
+            for i, p in ipairs(Game.Parse) do
+               if p.heredoc_todo then
+                  Game.Here_Doc = true
+                  break
+               end
+            end
+         else -- Parsing
+            local parse = Game.Parse
+            local pos = 1
+            local token, pos = lex.NextToken(Game.Line, pos)
+            while token ~= "" do
+               if token == "&" then
+                  parse[#parse].background = true
+               elseif token == "&&" then
+                  parse[#parse + 1] = {["args"] = ""}
+                  parse[#parse].sequence = true
+               elseif token == ">" then
+                  parse[#parse].output = lex.NextToken()
+                  parse[#parse].output_append = false
+               elseif token == ">>" then
+                  parse[#parse].output, pos = lex.NextToken(Game.Line, pos)
+                  parse[#parse].output_append = true
+               elseif token == "<" then
+                  parse[#parse].input, pos = lex.NextToken(Game.Line, pos)
+               elseif token == "<<" then
+                  parse[#parse].heredoc = true
+                  parse[#parse].heredoc_todo = true
+                  parse[#parse].heredoc_str = {""}
+                  parse[#parse].heredoc_marker, pos = lex.NextToken(Game.Line, pos)
+                  Game.Here_Doc = true
+               else
+                  parse[#parse].args = parse[#parse].args .. " " .. token
+               end
+
+               token, pos = lex.NextToken(Game.Line, pos)
+            end
+            Game.Parse = parse
+            Game.Parse_Complete = true
+         end
+      end
+
+      if Game.Parse_Complete == true and Game.Here_Doc == false then
+
+         Game.Parse = {{["args"] = ""}}
+         Game.Parse_Complete = false
+      end
+
+      do -- Game.Text
+         Game.Text[#Game.Text] = Game.Line
+         if newline then
+            Game.Text[#Game.Text + 1] = ""
+         end
 
          if #Game.Text > math.floor(2/y_dim) then
             local diff = #Game.Text - math.floor(2/y_dim)
@@ -66,54 +135,6 @@ Loop = {
          end
       end
 
-      if Game.Here_Doc == true then -- Here doc entry
-         for _, p in ipairs(Game.Parse) do
-         end
-      elseif newline == true then -- Parsing
-         --[[
-         typedef struct Command {
-            struct Command *next, *prev;
-            Char **args;
-
-            Char *input_from; // <
-            Char *output_to; // > / >>
-            B32 output_append; // >>
-
-            B32 background; // &
-            B32 sequential; // && : true / &&& : false
-
-            Byte _pa1[4];
-         } Command;
-         --]]
-         local parse = Game.Parse
-         local pos = 1
-         local token, pos = lex.NextToken(Game.Text[#Game.Text - 1], pos)
-         while token ~= "" do
-            if token == "&" then
-               parse[#parse].background = true
-            elseif token == "&&" then
-               parse[#parse + 1] = {["args"] = ""}
-               parse[#parse].sequence = true
-            elseif token == ">" then
-               parse[#parse].output = lex.NextToken()
-               parse[#parse].output_append = false
-            elseif token == ">>" then
-               parse[#parse].output, pos = lex.NextToken(Game.Text[#Game.Text - 1], pos)
-               parse[#parse].output_append = true
-            elseif token == "<" then
-               parse[#parse].input, pos = lex.NextToken(Game.Text[#Game.Text - 1], pos)
-            elseif token == "<<" then
-               parse[#parse].heredoc = true
-               parse[#parse].heredoc_marker, pos = lex.NextToken(Game.Text[#Game.Text - 1], pos)
-               Game.Here_Doc = true
-            else
-               parse[#parse].args = parse[#parse].args .. " " .. token
-            end
-
-         token, pos = lex.NextToken(Game.Text[#Game.Text - 1], pos)
-         end
-         Game.Parse = parse
-      end
 
       do -- Convert Line input into renderable text and render it
          local render_text = {}
@@ -204,9 +225,9 @@ Loop = {
          end
       end
 
-      do -- FInalize
-         if Game.Here_Doc ~= true then
-            Game.Parse = {{["args"] = ""}}
+      do -- Finalize
+         if newline then
+            Game.Line = ""
          end
 
          Game.Messages = {}
