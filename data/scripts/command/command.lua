@@ -1,7 +1,7 @@
-local mymodule = {}
+local command = {}
 
-function mymodule.foo()
+function command.foo()
     print("Hello World!")
 end
 
-return mymodule
+return command
