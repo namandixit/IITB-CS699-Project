@@ -29,7 +29,7 @@ local function isalnum (c)
     end
 end
 
-function getopt.Next(arg_str, options)
+function getopt.parse(arg_str, options)
    local arg = {}
 
    for w in arg_str:gmatch("%S+") do
