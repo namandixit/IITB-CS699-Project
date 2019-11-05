@@ -36,7 +36,7 @@ void main()
     vec4 background = vec4(0.0f);
     float background_brightness = 0.9f;
     float noise_magnitude = 0.2f + fract(float(scan_pos)/1.1)/30.0f;
-    int scanline_spacing = 3;
+    int scanline_spacing = 6;
     vec3 ambient = vec3(0.2f);
 
     { // Background
@@ -66,7 +66,7 @@ void main()
         background = background * (1 - 0.5f * (abs(norm_pos.x) * abs(norm_pos.x) + 0.8f * abs(norm_pos.y) * abs(norm_pos.y)));
 
         // Scan gun trace
-        background = background + 0.01f * step(scan_pos, gl_FragCoord.y) * exp(-0.002f * (gl_FragCoord.y - scan_pos));
+        background = background + 0.05f * step(scan_pos, gl_FragCoord.y) * exp(-0.002f * (gl_FragCoord.y - scan_pos));
 
         background = background_brightness * background;
     }
