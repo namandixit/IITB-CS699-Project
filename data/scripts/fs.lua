@@ -47,7 +47,6 @@ end
 
 function filesystem:insert (inode, parent_path)
    local parts = self.segments(parent_path)
-   print(table.show(parts))
    local root = self.inode
    local parent = root
 
@@ -63,7 +62,7 @@ function filesystem:insert (inode, parent_path)
 
       if child == nil then
          return false, "Parent \"" .. parent_path .. "\" doesn't exist"
-      elseif child.kind == "d" then
+      elseif child.kind ~= "d" then
          return false, "\"" .. parent_path .. "\" is not a directory"
       else
          parent = child
