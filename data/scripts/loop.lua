@@ -11,6 +11,7 @@ Loop = {
    Init = function ()
       Game.Line = ""
       Game.Messages = {}
+      -- prompt can be a string or nil (in case of output strings)
       Game.Text = {{["prompt"] = "", ["text"] = ""}}
       Game.Here_Doc = false
       Game.Parse_Complete = false
@@ -18,7 +19,9 @@ Loop = {
       Game.FS = fs.new(inode)
       Game.FS.pwd = Game.FS.inode
       Game.FS:insert(inode.new("home", "d"), "/")
+      Game.FS:insert(inode.new("user", "d"), "/home/")
       Game.Output = nil
+      Game.Prompt = "user@cs699 " .. Game.FS:path(Game.FS.pwd) .. " $ "
       Game.Prompt_Show = true
    end,
 
@@ -105,7 +108,7 @@ Loop = {
                   table.insert(parse, {["args"] = ""})
                   parse[#parse].sequence = true
                elseif token == ">" then
-                  parse[#parse].output = lex.NextToken()
+                  parse[#parse].output = lex.NextToken(Game.Line, pos)
                   parse[#parse].output_append = false
                elseif token == ">>" then
                   parse[#parse].output, pos = lex.NextToken(Game.Line, pos)
@@ -122,7 +125,7 @@ Loop = {
                   parse[#parse].args = parse[#parse].args .. " " .. token
                end
 
-               token, pos = lex.NextToken(Game.Line, pos)
+            token, pos = lex.NextToken(Game.Line, pos)
             end
             Game.Parse = parse
             Game.Parse_Complete = true
@@ -132,9 +135,17 @@ Loop = {
       if Game.Parse_Complete == true and Game.Here_Doc == false then
          local command = Game.Parse[1].args:gmatch("%S+")()
 
-         if command == "cd" then
+         if command == nil or command == "" then
+         elseif command == "cd" then
             local parse = getopt.parse(Game.Parse[1].args)
-            local success, err = Game.FS:cd(Game.FS:path(Game.FS.pwd) .. parse.args[1])
+            local success, err
+
+            if parse.args[1]:sub(1, 1) == "/" then
+               success, err = Game.FS:cd(parse.args[1])
+            else
+               success, err = Game.FS:cd(Game.FS:path(Game.FS.pwd) .. parse.args[1])
+            end
+
             if not success then
                Game.Output = {err}
             end
@@ -169,7 +180,7 @@ Loop = {
 
          if Game.Output ~= nil then
             for _, l in ipairs(Game.Output) do
-               table.insert(Game.Text, {["prompt"] = "", ["text"] = l})
+               table.insert(Game.Text, {["prompt"] = nil, ["text"] = l})
             end
             Game.Output = nil
          end
@@ -210,8 +221,8 @@ Loop = {
                render_text[#render_text].prompt = prompt
                x = Engine.Functions.RenderGetTextDimensions(Assets.Fonts.Mono, prompt)
                render_text[#render_text].x = x
+               prompt = ""
             end
-
             word = ""
             local line_char = chars(line)
 
@@ -224,7 +235,7 @@ Loop = {
                                                                             " ")
                      x = x + x_inc
                      if x >= 1 then
-                        table.insert(render_text, {["prompt"] = line_tab.prompt, ["text"] = " "})
+                        table.insert(render_text, {["prompt"] = prompt, ["text"] = " "})
                         x = 0
                      else
                         render_text[#render_text].text = render_text[#render_text].text .. " "
@@ -234,7 +245,7 @@ Loop = {
                                                                             word)
                      if x + x_inc >= 1 then
                         x = 0
-                        table.insert(render_text, {["prompt"] = line_tab.prompt, ["text"] = word})
+                        table.insert(render_text, {["prompt"] = prompt, ["text"] = word})
                      else
                         render_text[#render_text].text = render_text[#render_text].text .. word
                      end
@@ -244,7 +255,7 @@ Loop = {
                      local x_inc = Engine.Functions.RenderGetTextDimensions(Assets.Fonts.Mono,
                                                                             " ")
                      if x + x_inc >= 1 then
-                        table.insert(render_text, {["prompt"] = line_tab.prompt, ["text"] = ""})
+                        table.insert(render_text, {["prompt"] = prompt, ["text"] = ""})
                         x = 0
                      else
                         render_text[#render_text].text = render_text[#render_text].text .. " "
@@ -262,7 +273,7 @@ Loop = {
                local x_inc = Engine.Functions.RenderGetTextDimensions(Assets.Fonts.Mono, word)
                if x + x_inc >= 1 then
                   x = 0
-                  table.insert(render_text, {["prompt"] = line_tab.prompt, ["text"] = word})
+                  table.insert(render_text, {["prompt"] = prompt, ["text"] = word})
                else
                   render_text[#render_text].text = render_text[#render_text].text .. word
                end
@@ -285,7 +296,7 @@ Loop = {
             end
 
             local text_color
-            if render_text[i].prompt ~= "" then
+            if render_text[i].prompt ~= nil then
                text_color = Color(0.11, 1, 0.09, 1)
             else
                text_color = Color(0.41, 1, 0.09, 1)
