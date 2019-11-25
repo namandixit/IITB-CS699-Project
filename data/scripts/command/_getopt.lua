@@ -16,6 +16,16 @@
 -- note POSIX demands the parser ends at the first non option
 --      this behavior isn't implemented.local getopt = {}
 
+-- getopt.parse("asd -a g -t -yui --as=5454 a.c", "a") =>
+-- { ["pars"] = { ["a"] = "g",
+--                ["t"] = true,
+--                ["y"] = true,
+--                ["u"] = true,
+--                ["i"] = true,
+--                ["as"] = 5454 },
+--   ["args"] = {"a.c"},
+--   ["command"] = "asd" }
+
 local getopt = {}
 
 local function isalnum (c)
