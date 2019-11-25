@@ -41,7 +41,6 @@ end
 
 function getopt.parse(arg_str, options)
    local arg = {}
-
    for w in arg_str:gmatch("%S+") do
       table.insert(arg, w)
    end
