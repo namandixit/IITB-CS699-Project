@@ -1,3 +1,13 @@
+/** 
+* @brief Function to create OpenGL shader
+*
+* This function create the OpenGL shader for graphics rendering to provide interface for the game.
+*
+* @param vert_src character pointer to verticle source
+* @param frag_src character pointer to fragment source
+* 
+* @return GLint
+*/
 internal_function
 GLint openglShaderCreate(const char *const vert_src,
                          const char *const frag_src)

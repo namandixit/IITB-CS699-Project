@@ -28,7 +28,6 @@
 #pragma clang diagnostic ignored "-Wcomma"
 #pragma clang diagnostic ignored "-Wpadded"
 #pragma clang diagnostic ignored "-Wcast-qual"
-#pragma clang diagnostic ignored "-Wextra-semi-stmt"
 #define STB_TRUETYPE_IMPLEMENTATION
 #define STBTT_STATIC
 #include "stb/stb_truetype.h"

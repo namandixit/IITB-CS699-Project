@@ -1,3 +1,29 @@
+/** 
+* @brief Function to render text on OpenGL rendered screen
+*
+* This function is used to render text in openGL game console screen.It uses shaders to render text and different font and color in game console. 
+*
+
+* @param vao Gluint variable for 3D rendering
+* @param vbo Gluint variable for 3D rendering
+* @param baked_char stbtt_bakedchar library variable to bake the character
+* @param program Gluint variable for 3D rendering for lua program
+* @param texture Gluint variable for 3D rendering for texture
+* @param bitmap_width bitmap width in unsigned32 
+* @param bitmap_height bitmap height in unsigned32 
+* @param char_first first charecter in unsigned32
+* @param char_num number of chareter in unsigned32
+* @param text character pointer to the content to be rendered
+* @param screen_pos position on the screen at which the text to be rendered in Vec3
+* @param color color of the text to be rendered in Vec3
+* @param scale_factor scale factor for the text size in float32
+* @param x_scaling scaling in x direction in float32
+* @param x_ret length of rendered text in x direction
+* @param y_min_ret length of rendered text below in the y direction 
+* @param y_max_ret length of rendered text up in the y direction
+*
+* @return bool
+*/
 internal_function
 B32 renderText (GLuint vao, GLuint vbo, GLuint texture, GLuint program,
                 char char_first, char char_num,

@@ -1,3 +1,11 @@
+/** 
+* @brief Function which trigger the corresponding lua function assetLoadScript
+*
+* This c function takes function pointer for corresponding lua function assetLoadScript and call the lua function from .c source file.
+*
+* @param l ponter to lua function of type lua_State
+* @return Sint
+*/
 internal_function
 Sint scriptAssetLoadScript (lua_State *l)
 {
@@ -22,6 +30,14 @@ Sint scriptAssetLoadScript (lua_State *l)
     return 0;
 }
 
+/** 
+* @brief Function which trigger the corresponding lua function assetLoadTrueTypeFont
+*
+* This c function takes function pointer for corresponding lua function assetLoadTrueTypeFont and call the lua function from .c source file.
+*
+* @param l ponter to lua function of type lua_State
+* @return int
+*/
 internal_function
 int scriptAssetLoadTrueTypeFont (lua_State *l)
 {

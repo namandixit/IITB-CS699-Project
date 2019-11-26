@@ -4,6 +4,17 @@
 
 #define MAX_STACK_FRAMES 64
 
+
+/** 
+* @brief This function print address in readable format
+*
+*This function prints a nicely formatted string specifying the
+       function and source line of the address 
+* 
+* @param addr pointer of type void for the address location
+*
+* @return int
+*/
 internal_function
 int debug_AddressToLine(void *addr)
 {
@@ -15,6 +26,13 @@ int debug_AddressToLine(void *addr)
     return system(addr2line_cmd);
 }
 
+/** 
+* @brief Function to print stack trace.
+*
+* This function print only neccessary sequence of stack trace.
+* It skip the first couple of stack frames and also skip the last frame as it usually contains junk.
+* @return void
+*/
 internal_function
 void debugPrintCallStackTrace()
 {
@@ -26,7 +44,7 @@ void debugPrintCallStackTrace()
     messages = backtrace_symbols(stack_traces, trace_size);
 
     if (!messages) {
-        printf("COuldn't print stack trace\n");
+        printf("Couldn't print stack trace\n");
         exit(1);
     }
 

@@ -1,3 +1,14 @@
+/** 
+* @brief This function load the shader assets for gameplay.
+*
+* It reads the file at vertex path and fragement path and caste it into character array.
+* Before exiting it frees up the vertex and fragment source.
+* 
+* @param vertex_path character array containing path for vertex
+* @param fragment_path character array containing path for fragment
+*
+* @return bool
+*/
 internal_function
 B32 assetLoadShader (char* vertex_path,
                      char* fragment_path,
@@ -36,6 +47,19 @@ B32 assetLoadShader (char* vertex_path,
 
 }
 
+/** 
+* @brief This function load the script assets for gameplay.
+*
+* It reads the file at script path caste it into character array.
+* Check the lua load script , lua game call and log console. 
+* Finally, free up the resources used by script. 
+*
+* @param game lua_State pointer used to load assets 
+* @param script_path character array containing path for script
+*
+* @return bool
+*/
+
 internal_function
 B32 assetLoadScript (lua_State *game,
                      char *script_path)
@@ -60,6 +84,29 @@ B32 assetLoadScript (lua_State *game,
 
     return true;
 }
+
+/** 
+* @brief This function load the true type font used in gameplay.
+*
+* It load the font for all the text and graphics rendering in the game.
+* It load different set of fonts for OpenGL rendering. 
+*
+* @param font_path character array for the path of font 
+* @param unsigned32 number for font size 
+* @param vert_path charater array for verticle path
+* @param frag_path charater array for fragment path
+* @param bitmap_width bitmap width in unsigned32 
+* @param bitmap_height bitmap height in unsigned32 
+* @param char_first first charecter in unsigned32
+* @param char_num number of chareter in unsigned32
+* @param vao Gluint variable for 3D rendering
+* @param vbo Gluint variable for 3D rendering
+* @param baked_char stbtt_bakedchar library variable to bake the character
+* @param program Gluint variable for 3D rendering for lua program
+* @param texture Gluint variable for 3D rendering for texture
+*
+* @return bool
+*/
 
 internal_function
 B32 assetLoadTrueTypeFont (Char *font_path, U32 font_size,
