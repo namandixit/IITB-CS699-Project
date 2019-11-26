@@ -2,10 +2,11 @@ package.path = "data/scripts/?.lua;" .. package.path
 
 local command = require "command/command"
 local tutorial = require "tutorial"
-local lex = require "lex"
-local inode = require "inode"
-local fs = require "fs"
+local lex = require "lib/lex"
+local inode = require "lib/inode"
+local fs = require "lib/fs"
 local getopt = require "command/_getopt"
+local commands = require "command/command"
 require "lib/table"
 
 Loop = {
@@ -34,7 +35,11 @@ Loop = {
 
       Game.FS = fs.new(inode)
       Game.FS.pwd = Game.FS.inode
+      Game.FS:insert(inode.new("vmlinux1", "f"), "/")
+      Game.FS:insert(inode.new("vmlinuz2", "f"), "/")
       Game.FS:insert(inode.new("home", "d"), "/")
+      Game.FS:insert(inode.new("tmp", "d"), "/")
+      Game.FS:insert(inode.new("temp_file.nvidia", "f"), "/tmp/")
       Game.FS:insert(inode.new("user", "d"), "/home/")
 
       Game.Prompt = "user@cs699 " .. Game.FS:path(Game.FS.pwd) .. " $ "
@@ -189,6 +194,13 @@ Loop = {
                   if not success then
                      Game.Output = {err}
                   end
+               end
+            elseif commands[command] ~= nil then
+               local out, err = commands[command].call(parse)
+               if out == nil then
+                  Game.Output = {err}
+               else
+                  Game.Output = out
                end
             else
                Game.Output = {"Error: command \"" .. command .. "\" not found"}
