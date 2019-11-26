@@ -773,12 +773,17 @@ Sint main (Sint argc, Char *argv[])
             lua_getfield(game_code, 2, "Loop"); // <Events> Loop Loop()
             lua_pushnumber(game_code, last_frame_time); // <Events> Loop Loop() last_frame_time
             lua_pushvalue(game_code, 1); // <Events> Loop Loop() last_frame_time <Events>
-            if (lua_pcall(game_code, 2, 0, 0)) {
+            if (lua_pcall(game_code, 2, LUA_MULTRET, 0)) {
                 logConsole(LOG_LEVEL_CRITICAL,
                            LOG_CHANNEL_LOOP,
                            "UpdateAndRender failed: %s",
                            lua_tostring(game_code, -1));
                 goto error;
+            }
+            B32 result = (B32)lua_toboolean(game_code, -1);
+
+            if (result == false) {
+                global_game_is_running = false;
             }
             lua_pop(game_code, lua_gettop(game_code));
         }

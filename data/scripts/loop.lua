@@ -1,6 +1,7 @@
 package.path = "data/scripts/?.lua;" .. package.path
 
 local command = require "command/command"
+local tutorial = require "tutorial"
 local lex = require "lex"
 local inode = require "inode"
 local fs = require "fs"
@@ -9,24 +10,55 @@ require "lib/table"
 
 Loop = {
    Init = function ()
-      Game.Line = ""
-      Game.Messages = {}
+      Game.Result = true -- The return value of Loop
+
+      Game.Messages = {} -- System messages
+      Game.Line = "" -- The line of text being typed in currently
       -- prompt can be a string or nil (in case of output strings)
-      Game.Text = {{["prompt"] = "", ["text"] = ""}}
-      Game.Here_Doc = false
-      Game.Parse_Complete = false
-      Game.Parse = {{["args"] = ""}}
+      Game.Text = {{["prompt"] = "", ["text"] = ""}} -- The text that might be need to rendered this frame
+
+      Game.Here_Doc = false -- Are we in heredoc mode?
+      Game.Parse_Complete = false -- Has the entirety of command been inserted and parsed?
+      Game.Parse = {{["args"] = ""}} -- Contains parse of the entire inserted command, each entrylike:
+      -- {["sequence"] = true/false (&&),
+      --  ["background"] = true/false (&),
+      --  ["output"] = filename (>/>>),
+      --  ["output_append"] = true/false (>>),
+      --  ["input"] = filename (<),
+      --  ["heredoc"] = true/false (<<),
+      --  ["heredoc_str"] = {"","",...} (<<),
+      --  ["args"] = command
+      -- }
+
+      Game.Output = nil -- Contains the output of any command
+
       Game.FS = fs.new(inode)
       Game.FS.pwd = Game.FS.inode
       Game.FS:insert(inode.new("home", "d"), "/")
       Game.FS:insert(inode.new("user", "d"), "/home/")
-      Game.Output = nil
+
       Game.Prompt = "user@cs699 " .. Game.FS:path(Game.FS.pwd) .. " $ "
       Game.Prompt_Show = true
+
+      Game.Cursor_Visible = true
+      Game.Cursor_Toggle_At = 500000
+      Game.Cursor_Time_Left = Game.Cursor_Toggle_At
+
+      Game.Tutorial_Text = {""} -- Tutorial text
+      Game.Tutorial = coroutine.create(tutorial.tutorial)
+      Game.Tutorial_In_Progress = true
+      Game.Tutorial_In_Progress, Game.Tutorial_Text_Current = coroutine.resume(Game.Tutorial)
+      if Game.Tutorial_Text_Current ~= nil then
+         for i = 1, #Game.Tutorial_Text_Current do
+            table.insert(Game.Tutorial_Text, Game.Tutorial_Text_Current[i])
+         end
+      end
    end,
 
    Loop = function (last_frame_time, events)
+      Game.Result = true
       Game.Prompt = "user@cs699 " .. Game.FS:path(Game.FS.pwd) .. " $ "
+
       local messages = Game.Messages
 
       do -- Process events and convert them to messages
@@ -108,7 +140,7 @@ Loop = {
                   table.insert(parse, {["args"] = ""})
                   parse[#parse].sequence = true
                elseif token == ">" then
-                  parse[#parse].output = lex.NextToken(Game.Line, pos)
+                  parse[#parse].output, pos = lex.NextToken(Game.Line, pos)
                   parse[#parse].output_append = false
                elseif token == ">>" then
                   parse[#parse].output, pos = lex.NextToken(Game.Line, pos)
@@ -133,24 +165,34 @@ Loop = {
       end
 
       if Game.Parse_Complete == true and Game.Here_Doc == false then
-         local command = Game.Parse[1].args:gmatch("%S+")()
-
-         if command == nil or command == "" then
-         elseif command == "cd" then
-            local parse = getopt.parse(Game.Parse[1].args)
-            local success, err
-
-            if parse.args[1]:sub(1, 1) == "/" then
-               success, err = Game.FS:cd(parse.args[1])
-            else
-               success, err = Game.FS:cd(Game.FS:path(Game.FS.pwd) .. parse.args[1])
-            end
-
-            if not success then
-               Game.Output = {err}
-            end
+         local parse, parse_error = getopt.parse(Game.Parse[1].args)
+         if parse == nil then
+            Game.Output = {parse_error}
          else
-            Game.Output = {"Error: command \"" .. command .. "\" not found"}
+            -- local command = Game.Parse[1].args:gmatch("%S+")()
+            local command = parse.command
+
+            if command == nil then
+               Game.Output = {"Invalid command"}
+            elseif command == "" then
+            elseif command == "exit" then
+               Game.Result = false
+            elseif command == "cd" then
+               local success, err
+               if #parse.args >= 1 then
+                  if parse.args[1]:sub(1, 1) == "/" then
+                     success, err = Game.FS:cd(parse.args[1])
+                  else
+                     success, err = Game.FS:cd(Game.FS:path(Game.FS.pwd) .. parse.args[1])
+                  end
+
+                  if not success then
+                     Game.Output = {err}
+                  end
+               end
+            else
+               Game.Output = {"Error: command \"" .. command .. "\" not found"}
+            end
          end
 
          Game.Parse = {{["args"] = ""}}
@@ -193,6 +235,21 @@ Loop = {
             local diff = #Game.Text - math.floor(2/y_dim)
             for i = 1, diff do
                table.remove(Game.Text, i)
+            end
+         end
+
+         if Game.Cursor_Visible == true then
+            Game.Text[#Game.Text].text = Game.Text[#Game.Text].text .. "_"
+         end
+
+         Game.Cursor_Time_Left = Game.Cursor_Time_Left - last_frame_time
+         if Game.Cursor_Time_Left <= 0 then
+            if Game.Cursor_Visible == true then
+               Game.Cursor_Visible = false
+               Game.Cursor_Time_Left = Game.Cursor_Toggle_At
+            else
+               Game.Cursor_Visible = true
+               Game.Cursor_Time_Left = Game.Cursor_Toggle_At
             end
          end
       end
@@ -309,6 +366,126 @@ Loop = {
          end
       end
 
+
+
+      do -- Process tutorial text
+         if newline then
+            Game.Tutorial_In_Progress, Game.Tutorial_Text_Current = coroutine.resume(Game.Tutorial, Game.Line)
+         else
+            Game.Tutorial_Text_Current = nil
+         end
+
+         if Game.Tutorial_In_Progress == false then
+            Game.Tutorial_Text_Current = nil
+         end
+
+         if Game.Tutorial_Text_Current ~= nil then
+            for i = 1, #Game.Tutorial_Text_Current do
+               table.insert(Game.Tutorial_Text, Game.Tutorial_Text_Current[i])
+            end
+         end
+
+         if #Game.Tutorial_Text > math.floor(2/y_dim) then
+            local diff = #Game.Tutorial_Text - math.floor(2/y_dim)
+            for i = 1, diff do
+               table.remove(Game.Tutorial_Text, i)
+            end
+         end
+      end
+
+      do -- Convert tutorial text into renderable text and render it
+         local render_text = {}
+
+         local line_extra = 0
+         for line_num, line in ipairs(Game.Tutorial_Text) do
+            local word = ""
+            local x = -1
+
+            local function chars(str)
+               local strc = {}
+               for i = 1, #str do
+                  table.insert(strc, string.sub(str, i, i))
+               end
+               return strc
+            end
+
+            local line_char = chars(line)
+
+            table.insert(render_text, "")
+
+            for i = 1, #line do
+               local c = line_char[i]
+
+               if c == " " then
+                  if word == "" then
+                     local x_inc = Engine.Functions.RenderGetTextDimensions(Assets.Fonts.Mono,
+                                                                            " ")
+                     x = x + x_inc
+                     if x >= 0 then
+                        table.insert(render_text, " ")
+                        x = -1
+                     else
+                        render_text[#render_text] = render_text[#render_text] .. " "
+                     end
+                  else
+                     local x_inc = Engine.Functions.RenderGetTextDimensions(Assets.Fonts.Mono,
+                                                                            word)
+                     if x + x_inc >= 0 then
+                        x = -1
+                        table.insert(render_text, word)
+                     else
+                        render_text[#render_text] = render_text[#render_text] .. word
+                     end
+
+                     x = x + x_inc
+
+                     local x_inc = Engine.Functions.RenderGetTextDimensions(Assets.Fonts.Mono,
+                                                                            " ")
+                     if x + x_inc >= 0 then
+                        table.insert(render_text, "")
+                        x = -1
+                     else
+                        render_text[#render_text] = render_text[#render_text] .. " "
+                     end
+                     x = x + x_inc
+
+                     word  = ""
+                  end
+               else
+                  word = word .. c
+               end
+            end
+
+            if word ~= "" then
+               local x_inc = Engine.Functions.RenderGetTextDimensions(Assets.Fonts.Mono, word)
+               if x + x_inc >= 0 then
+                  x = -1
+                  table.insert(render_text, {["prompt"] = prompt, ["text"] = word})
+               else
+                  render_text[#render_text] = render_text[#render_text] .. word
+               end
+               x = x + x_inc
+            end
+         end
+
+         local render_text_begin = 1
+         local render_upper_bound = math.floor(2/y_dim) - 1
+         if #render_text > render_upper_bound then
+            local diff = #render_text - render_upper_bound
+            render_text_begin = diff
+         end
+
+         for i = render_text_begin, #render_text do
+            -- local text_color = Color(0.41, 1, 0.09, 1)
+            local text_color = Color(0.09, 0.41, 1, 1)
+            Engine.Functions.RenderText(Assets.Fonts.Mono, render_text[i],
+                                        Vector(-1,
+                                               1 - (i - render_text_begin + 1) * y_dim,
+                                               0),
+                                        text_color)
+         end
+      end
+
       do -- Finalize
          if newline then
             Game.Line = ""
@@ -316,5 +493,8 @@ Loop = {
 
          Game.Messages = {}
       end
+
+
+      return Game.Result
    end,
 }

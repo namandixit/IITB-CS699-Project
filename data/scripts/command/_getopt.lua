@@ -41,6 +41,11 @@ end
 
 function getopt.parse(arg_str, options)
    local arg = {}
+
+   if options == nil then
+      options = ""
+   end
+
    for w in arg_str:gmatch("%S+") do
       table.insert(arg, w)
    end
@@ -112,5 +117,82 @@ function getopt.parse(arg_str, options)
 
    return tab
 end
+
+function getopt.compare(sys_table, user_table, order)
+   if sys_table["command"] ~= user_table["command"] then
+      return false
+   end
+
+   local sys_args = sys_table["args"]
+   local user_args = user_table["args"]
+
+   if #user_args ~= #sys_args then
+      return false
+   else
+      if order == true then
+         for i = 1, #sys_args do
+            if sys_args[i] ~= user_args[i] then
+               return false
+            end
+         end
+      else
+         for i = 1, #sys_args do
+            local exists = false
+            for j = 1, #user_args do
+               if sys_args[i] == user_args[j] then
+                  exists = true
+               end
+            end
+            if exists == false then
+               return false
+            end
+         end
+
+         for i = 1, #user_args do
+            local exists = false
+            for j = 1, #sys_args do
+               if user_args[i] == sys_args[j] then
+                  exists = true
+               end
+            end
+            if exists == false then
+               return false
+            end
+         end
+      end
+   end
+
+   local sys_pars = sys_table["pars"]
+   local user_pars = user_table["pars"]
+
+   do
+      for k, v in pairs(sys_pars) do
+         local exists = false
+         for k2, v2 in pairs(user_pars) do
+            if k == k2 and v == v2 then
+               exists = true
+            end
+         end
+         if exists == false then
+            return false
+         end
+      end
+
+      for k, v in pairs(user_pars) do
+         local exists = false
+         for k2, v2 in pairs(sys_pars) do
+            if k == k2 and v == v2 then
+               exists = true
+            end
+         end
+         if exists == false then
+            return false
+         end
+      end
+   end
+
+   return true
+end
+
 
 return getopt

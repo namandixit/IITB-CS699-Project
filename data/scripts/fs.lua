@@ -46,27 +46,31 @@ function filesystem:path (inode)
 end
 
 function filesystem:insert (inode, parent_path)
-   local parts = self.segments(parent_path)
+   local parts, err = self.segments(parent_path)
    local root = self.inode
    local parent = root
 
-   for _, p in ipairs(parts) do
-      local child = nil
-      local i = 1
-      while child == nil and i <= #parent.children do
-         if parent.children[i].name == p then
-            child = parent.children[i]
+   if parts ~= nil then
+      for _, p in ipairs(parts) do
+         local child = nil
+         local i = 1
+         while child == nil and i <= #parent.children do
+            if parent.children[i].name == p then
+               child = parent.children[i]
+            end
+            i = i + 1
          end
-         i = i + 1
-      end
 
-      if child == nil then
-         return false, "Parent \"" .. parent_path .. "\" doesn't exist"
-      elseif child.kind ~= "d" then
-         return false, "\"" .. parent_path .. "\" is not a directory"
-      else
-         parent = child
+         if child == nil then
+            return false, "Parent \"" .. parent_path .. "\" doesn't exist"
+         elseif child.kind ~= "d" then
+            return false, "\"" .. parent_path .. "\" is not a directory"
+         else
+            parent = child
+         end
       end
+   else
+      return false, err
    end
 
    inode.parent = parent
@@ -76,27 +80,31 @@ function filesystem:insert (inode, parent_path)
 end
 
 function filesystem:cd (path)
-   local parts = self.segments(path)
+   local parts, err = self.segments(path)
    local root = self.inode
    local parent = root
 
-   for _, p in ipairs(parts) do
-      local child = nil
-      local i = 1
-      while child == nil and i <= #parent.children do
-         if parent.children[i].name == p then
-            child = parent.children[i]
+   if parts ~= nil then
+      for _, p in ipairs(parts) do
+         local child = nil
+         local i = 1
+         while child == nil and i <= #parent.children do
+            if parent.children[i].name == p then
+               child = parent.children[i]
+            end
+            i = i + 1
          end
-         i = i + 1
-      end
 
-      if child == nil then
-         return false, "Directory \"" .. p .. "\" doesn't exist"
-      elseif child.kind ~= "d" then
-         return false, "\"" .. child.name .. "\" is not a directory"
-      else
-         parent = child
+         if child == nil then
+            return false, "Directory \"" .. p .. "\" doesn't exist"
+         elseif child.kind ~= "d" then
+            return false, "\"" .. child.name .. "\" is not a directory"
+         else
+            parent = child
+         end
       end
+   else
+      return false, err
    end
 
    Game.FS.pwd = parent
