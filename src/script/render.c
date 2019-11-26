@@ -1,3 +1,11 @@
+/** 
+* @brief Function which trigger the corresponding lua function renderGetTextDimension
+*
+* This c function takes function pointer for corresponding lua function renderGetTextDimension and call the lua function from .c source file.
+*
+* @param l ponter to lua function of type lua_State
+* @return int
+*/
 internal_function
 int scriptRenderGetTextDimensions (lua_State *l)
 {
@@ -48,6 +56,14 @@ int scriptRenderGetTextDimensions (lua_State *l)
     return 3;
 }
 
+/** 
+* @brief Function which trigger the corresponding lua function renderText
+*
+* This c function takes function pointer for corresponding lua function renderText and call the lua function from .c source file.
+*
+* @param l ponter to lua function of type lua_State
+* @return int
+*/
 internal_function
 int scriptRenderText (lua_State *l)
 {

@@ -1,3 +1,13 @@
+/** 
+* @brief Function to read file 
+*
+* This fucntion is used for loading files for game play which is used to store configuration and game play state. 
+*
+* @param file_path character pointer to file path
+* @param control size of file path
+*
+* @return Byte
+*/
 internal_function
 Byte* fileRead (char *file_path, Size *size)
 {

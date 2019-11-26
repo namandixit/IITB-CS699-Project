@@ -24,12 +24,22 @@ enum Log_Channel {
     LOG_CHANNEL_COUNT,
 };
 
+/** 
+* @brief Function to log console data/information
+*
+* This function is used for logging console information and other error and warning messages related to game console.
+*
+* @param level contain enum value from the predefined enum for log level
+* @param channel contain enum value from the predefined enum for log channel
+* @param text character pointer to the content of the log
+* @return bool
+*/
 internal_function
 B32 logConsole (enum Log_Level level, enum Log_Channel channel,
                const char *text, ...)
 {
     va_list args;
-    va_start(args, text);
+    va_start(args, text); 
 
     SDL_LogPriority priority;
     if (level == LOG_LEVEL_VERBOSE) priority = SDL_LOG_PRIORITY_VERBOSE;
@@ -94,6 +104,21 @@ B32 logConsole (enum Log_Level level, enum Log_Channel channel,
     return true;
 }
 
+/** 
+* @brief Function to log debuging data
+*
+* This function is used for logging 3D rendering debug data and other error and warning messages related to 3D openGL graphics.
+*
+* @param source unsigned32 type source of the error
+* @param type unsigned32 value for type of error
+* @param id unsigned32 value unique id of the error
+* @param severity unsigned32 value denoting how severe error is
+* @param length length of the error message
+* @param message character pointer to content of message 
+* @param user_param void pointer to user parameters
+* 
+* @return void
+*/
 internal_function
 void logGLDebugCallback(U32 source, U32 type, U32 id, U32 severity,
                         S32 length, const Char* message,
