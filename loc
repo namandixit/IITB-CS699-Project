@@ -1,2 +1,0 @@
-#!/usr/bin/env bash
-cloc src/script/* src/assets.c src/debug.c src/event.c src/file.c src/log.c src/main.c src/opengl.c src/render.c src/time.c data/scripts/* data/shaders/*
