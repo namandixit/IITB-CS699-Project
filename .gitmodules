@@ -1,0 +1,6 @@
+[submodule "source/stb"]
+	path = source/stb
+	url = https://github.com/nothings/stb
+[submodule "source/nlib"]
+	path = source/nlib
+	url = https://github.com/namandixit/nlib
